@@ -14,13 +14,13 @@ def test_progress_update_and_read():
 
     # 更新
     r = client.put(
-        f"/api/progress/{userId}",
+        f"/api/progress/user/{userId}",
         json={"percentage": 70},
         headers={"token": token}
     )
     assert r.status_code == 200
 
     # 读取
-    r = client.get(f"/api/progress/{userId}", headers={"token": token})
+    r = client.get(f"/api/progress/user/{userId}", headers={"token": token})
     assert r.status_code == 200
     assert r.json()["percentage"] == 70
