@@ -19,15 +19,15 @@ def test_login_token_authentication_and_ownership():
     student_b = login("tao", "123")
 
     own = client.get(
-        f"/api/progress/{student_a['user_id']}",
+        f"/api/progress/user/{student_a['user_id']}",
         headers={"token": student_a["token"]},
     )
     other = client.get(
-        f"/api/progress/{student_b['user_id']}",
+        f"/api/progress/user/{student_b['user_id']}",
         headers={"token": student_a["token"]},
     )
     invalid_token = client.get(
-        f"/api/progress/{student_a['user_id']}",
+        f"/api/progress/user/{student_a['user_id']}",
         headers={"token": "invalid-token"},
     )
 
