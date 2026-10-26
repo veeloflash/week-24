@@ -7,17 +7,17 @@ from backend.security.validation import validate_study_question
 router = APIRouter()
 
 
-@router.put("/{progress_id}")
+@router.put("/user/{user_id}")
 def update_progress(
-    progress_id: int,
+    user_id: int,
     update: ProgressUpdate,
     user=Depends(authenticate),
 ):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_id FROM progress WHERE id=?",
-        (progress_id,)
+        "SELECT user_id FROM progress WHERE user_id=?",
+        (user_id,)
     )
     row = cur.fetchone()
 
@@ -35,24 +35,24 @@ def update_progress(
         raise HTTPException(status_code=400, detail="Percentage must be 0–100")
 
     cur.execute(
-        "UPDATE progress SET percentage=? WHERE id=?",
-        (percentage, progress_id)
+        "UPDATE progress SET percentage=? WHERE user_id=?",
+        (percentage, user_id)
     )
     conn.commit()
     conn.close()
 
     return {"message": "Progress updated"}
 
-@router.get("/{progress_id}")
+@router.get("/user/{user_id}")
 def get_progress(
-    progress_id: int,
+    user_id: int,
     user=Depends(authenticate),
 ):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_id, percentage FROM progress WHERE id=?",
-        (progress_id,)
+        "SELECT user_id, percentage FROM progress WHERE user_id=?",
+        (user_id,)
     )
     row = cur.fetchone()
     conn.close()
@@ -65,4 +65,3 @@ def get_progress(
     authorize(user, action="view_progress", resource_owner_id=owner_id)
 
     return {"user_id": owner_id, "percentage": row[1]}
-
