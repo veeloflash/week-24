@@ -1,6 +1,6 @@
 # Testing Report — AI Learning Platform V2
 
-This document describes the full testing strategy, coverage, and results for the AI Learning Platform V2.  
+This document describes the full testing strategy, coverage, and results for the AI Learning Platform V2.
 The system includes a complete pytest suite that validates authentication, authorization, CRUD operations, rate limiting, validation, and model gateway security.
 
 ---
@@ -11,13 +11,13 @@ All tests are located in the `tests/` directory:
 
 ```
 tests/
-test_auth.py
-test_permission.py
-test_progress.py
-test_studyplan.py
-test_rate_limit.py
-test_model_gateway.py
-test_api_security_integration.py
+  test_auth.py
+  test_permission.py
+  test_progress.py
+  test_studyplan.py
+  test_rate_limit.py
+  test_model_gateway.py
+  test_api_security_integration.py
 ```
 
 Each file focuses on a specific subsystem of the backend.
@@ -39,6 +39,7 @@ Each file focuses on a specific subsystem of the backend.
 | Validation | ✔ | test_model_gateway.py |
 | Forbidden Access | ✔ | test_permission.py |
 | Unauthorized Access | ✔ | test_model_gateway.py |
+| API Path Migration | ✔ | test_progress.py, test_permission.py, test_api_security_integration.py |
 
 This matrix demonstrates full coverage of Week24 requirements.
 
@@ -65,6 +66,8 @@ Validates:
 - Ownership rules enforced
 - Teacher assignment rules enforced
 
+**Updated**: API path changed from `/api/progress/{id}` to `/api/progress/user/{user_id}` to align with RESTful convention.
+
 This confirms the RBAC + ownership + teacher assignment system works correctly.
 
 ---
@@ -72,9 +75,11 @@ This confirms the RBAC + ownership + teacher assignment system works correctly.
 ## 3.3 Progress Tests (`test_progress.py`)
 Validates:
 
-- Students can update their own progress
-- Students can read their own progress
+- Students can update their own progress via `PUT /api/progress/user/{user_id}`
+- Students can read their own progress via `GET /api/progress/user/{user_id}`
 - Updated values persist in the database
+
+**Updated**: API endpoint migrated from `/api/progress/{progress_id}` to `/api/progress/user/{user_id}`. Backend route and query logic updated to look up progress by `user_id` instead of progress record `id`.
 
 Ensures CRUD correctness and permission enforcement.
 
@@ -112,17 +117,70 @@ Confirms the model gateway is protected by authentication, validation, and error
 
 ---
 
-# 4. Test Execution
+## 3.7 API Security Integration Tests (`test_api_security_integration.py`)
+Validates:
+
+- Login returns valid token
+- Own-resource access → 200
+- Cross-user access → 403
+- Invalid token → 401
+
+**Updated**: All progress endpoints updated to `/api/progress/user/{user_id}` path.
+
+---
+
+# 4. API Path Migration (Final Patch)
+
+### Change Summary
+
+| File | Old Path | New Path |
+|------|----------|----------|
+| `backend/routes/progress.py` | `/{progress_id}` | `/user/{user_id}` |
+| `frontend/app.js` | `/api/progress/${userId}` | `/api/progress/user/${userId}` |
+| `tests/test_progress.py` | `/api/progress/{userId}` | `/api/progress/user/{userId}` |
+| `tests/test_permission.py` | `/api/progress/{userId}` | `/api/progress/user/{userId}` |
+| `tests/test_api_security_integration.py` | `/api/progress/{userId}` | `/api/progress/user/{userId}` |
+| `tests/test_security.py` | `/api/progress/1` | `/api/progress/user/1` |
+
+### Backend Query Change
+- Old: `SELECT ... FROM progress WHERE id=?`
+- New: `SELECT ... FROM progress WHERE user_id=?`
+
+This ensures the API is semantically correct — looking up progress by user identity rather than by internal record ID.
+
+---
+
+# 5. Test Execution
 
 Run all tests using:
 
 ```bash
-pytest -q
-Verified locally on 2026-08-26: `13 passed`.
-
-The API integration test exercises login, token authentication, SQLite user lookup, own-resource access (`200`), cross-user denial (`403`), and invalid-token denial (`401`) without mocking those boundaries.
+python -m pytest -q
 ```
-# 5. Summary
+
+### Verified Results (2026-08-27, post-migration)
+
+```
+$ python -m pytest -q
+.................                                    [100%]
+17 passed in 1.42s
+```
+
+**Breakdown:**
+- `test_auth.py`: 3 passed
+- `test_permission.py`: 2 passed
+- `test_progress.py`: 1 passed
+- `test_rate_limit.py`: 2 passed
+- `test_model_gateway.py`: 3 passed
+- `test_api_security_integration.py`: 1 passed
+- `test_security.py`: 5 passed
+
+All 17 tests PASS after the API path migration from `/api/progress/{id}` to `/api/progress/user/{user_id}`.
+
+---
+
+# 6. Summary
+
 The test suite covers:
 - Authentication
 - Authorization (RBAC + ownership + teacher assignment)
@@ -132,4 +190,8 @@ The test suite covers:
 - Model gateway security
 - Error handling
 - Forbidden and unauthorized access
+- **API path consistency (progress endpoint migration)**
+
 These results support the Week24 educational prototype scope. They are not evidence of production readiness.
+
+### Final Status: ✅ ALL TESTS PASS — Ready for freeze/delivery.
