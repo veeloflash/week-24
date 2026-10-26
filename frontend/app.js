@@ -24,7 +24,7 @@ async function login() {
 }
 
 async function viewProgress() {
-    const res = await fetch(`http://127.0.0.1:8000/api/progress/${userId}`, {
+    const res = await fetch(`http://127.0.0.1:8000/api/progress/user/${userId}`, {
         headers: {"token": token}
     });
 
